@@ -3,6 +3,8 @@ import pickle
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import requests
+import os
 
 # -------------------------
 # Helpers
@@ -10,12 +12,9 @@ import plotly.express as px
 def safe_to_float(x):
     """Try several ways to coerce x to a Python float. Return np.nan on failure."""
     try:
-        # if x is array-like (numpy scalar etc.)
         arr = np.array(x)
-        # handle shape () or (1,) or (1,1) etc.
         if arr.size == 1:
             return float(arr.reshape(-1)[0])
-        # if multiple values, take the first (we expect single-row predictions)
         return float(arr.reshape(-1)[0])
     except Exception:
         try:
@@ -47,13 +46,29 @@ st.markdown(
 )
 
 # -------------------------
-# Load model (pipeline)
+# Load model from Dropbox
 # -------------------------
+MODEL_URL = "https://www.dropbox.com/scl/fi/rqmel07pl1hswv4eutgly/Yield_prediction.pk1?rlkey=i2fk2n9ypvgt6i8jyfidqnlr4&st=ejb97kr9&dl=1"
+MODEL_PATH = "Yield_Prediction.pk1"
+
+if not os.path.exists(MODEL_PATH):
+    with st.spinner("Downloading model..."):
+        try:
+            r = requests.get(MODEL_URL, stream=True)
+            r.raise_for_status()
+            with open(MODEL_PATH, "wb") as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    f.write(chunk)
+        except Exception as e:
+            st.error("Failed to download model from Dropbox.")
+            st.exception(e)
+            st.stop()
+
 try:
-    with open("Yield_prediction.pk1", "rb") as f:
+    with open(MODEL_PATH, "rb") as f:
         model = pickle.load(f)
 except Exception as e:
-    st.error("Error loading model file 'Yield_prediction.pk1'. Make sure it exists in the same folder.")
+    st.error("Error loading model file.")
     st.exception(e)
     st.stop()
 
@@ -96,7 +111,6 @@ st.markdown('<div class="small_note">Choose from dropdown or type custom Crop/St
 # Predict button
 # -------------------------
 if st.button("🔎 Predict"):
-    # prepare input dataframe
     input_df = pd.DataFrame([{
         "Crop": crop,
         "Season": season,
@@ -119,45 +133,33 @@ if st.button("🔎 Predict"):
         st.exception(e)
         st.stop()
 
-    # turn prediction into 1D numpy and coerce elements to float safely
     if isinstance(raw_pred, pd.DataFrame):
         pred_row = raw_pred.iloc[0].values
     else:
         pred_row = np.array(raw_pred).ravel()
 
-    # require 6 outputs
     if pred_row.size != 6:
         st.error(f"Model returned {pred_row.size} outputs but 6 were expected. Raw output: {pred_row}")
         st.stop()
 
-    # parse safely to floats
-    yield_per_ha = safe_to_float(pred_row[0])   # 'Yield' (t/ha)
-    total_yield = safe_to_float(pred_row[1])    # 'total_yield' (model t)
-    fert_per_ha = safe_to_float(pred_row[2])    # 'Fertilizer_per_ha' (kg/ha)
-    pest_per_ha= safe_to_float(pred_row[3])    # 'Pesticide_per_ha' (kg/ha or L/ha)
-    fertilizer = safe_to_float(pred_row[4])    # 'Fertilizer' (model total kg)
-    pesticide = safe_to_float(pred_row[5])     # 'Pesticide' (model total kg)
+    yield_per_ha = safe_to_float(pred_row[0])
+    total_yield = safe_to_float(pred_row[1])
+    fert_per_ha = safe_to_float(pred_row[2])
+    pest_per_ha = safe_to_float(pred_row[3])
+    fertilizer = safe_to_float(pred_row[4])
+    pesticide = safe_to_float(pred_row[5])
 
-    # Ensure area is numeric
     try:
         area_f = float(area)
     except Exception:
         st.error("Area must be numeric.")
         st.stop()
 
-    # -------------------------
-    # Calculations (per-ha × area)
-    # -------------------------
     total_yield = yield_per_ha * area_f
     fertilizer = fert_per_ha * area_f
     pesticide = pest_per_ha * area_f
 
-    # -------------------------
-    # Display results
-    # -------------------------
     st.markdown("---")
- 
-    # Calculated outputs
     st.write(f"- Yield per ha        : `{yield_per_ha:.3f}` t/ha")
     st.write(f"- Total Yield   : `{total_yield:.3f}` t ")
     st.write(f"- Fertilizer per ha   : `{fert_per_ha:.3f}` kg/ha")
@@ -165,7 +167,6 @@ if st.button("🔎 Predict"):
     st.write(f"- Pesticide per ha    : `{pest_per_ha:.3f}` kg/ha")
     st.write(f"- Total Pesticide     : `{pesticide:.3f}` kg ")
 
-    # Comparison chart
     comp_df = pd.DataFrame({
         "Metric": ["Total Yield (t)", "Fertilizer (kg)", "Pesticide (kg)"],
         "Calculated": [total_yield, fertilizer, pesticide]
