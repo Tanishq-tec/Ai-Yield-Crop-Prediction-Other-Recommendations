@@ -8,6 +8,7 @@ import requests
 import os
 from deep_translator import GoogleTranslator
 
+
 # -------------------------
 # Helpers
 # -------------------------
