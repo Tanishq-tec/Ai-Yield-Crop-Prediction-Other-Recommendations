@@ -38,7 +38,7 @@ def translate_text(text, target_lang="en"):
 # -------------------------
 # Page + style
 # -------------------------
-st.set_page_config(page_title="🌑 Dark Agri Predictor", page_icon="🌾", layout="centered")
+st.set_page_config(page_title="Farm Sevak Agriculture Predictor", page_icon="🌾", layout="centered")
 
 # Sidebar language selector
 st.sidebar.header("🌐 Language")
@@ -51,22 +51,6 @@ lang_map = {
 }
 selected_lang = st.sidebar.selectbox("Choose Language", list(lang_map.keys()))
 TARGET_LANG = lang_map[selected_lang]
-
-st.markdown(
-    """
-    <style>
-        .stApp { background: linear-gradient(180deg, #060609 0%, #0b1020 100%); color: #E6EEF3; scroll-behavior: smooth; padding: 1rem 2rem; }
-        h1 { color: #7BE4D4; text-align: center; margin-bottom: 0.1rem;}
-        .subtitle { color: #9FB8C8; text-align: center; margin-top: 0rem; margin-bottom: 1rem;}
-        label { color: #BFDCE8 !important; font-weight: 600; }
-        .stTextInput input, .stNumberInput input, .stSelectbox > div { border-radius: 8px; background-color: #0f1720; color: #E6EEF3; }
-        .stButton button { background: linear-gradient(90deg,#ff7a59,#c94bff); color: white; font-weight: 700; border-radius: 10px; padding: 8px 18px; }
-        .result_val { color: #7BE4D4; font-weight: 700; font-size: 16px; }
-        .small_note { color: #98b1c1; font-size:12px; }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
 
 # -------------------------
 # Load model from Dropbox
@@ -98,8 +82,8 @@ except Exception as e:
 # -------------------------
 # Header + Inputs
 # -------------------------
-st.title(translate_text("🌑 Dark Agri Predictor", TARGET_LANG))
-st.markdown(f'<div class="subtitle">{translate_text("Compact dark UI — displays model outputs and recalculated totals", TARGET_LANG)}</div>', unsafe_allow_html=True)
+st.title(translate_text("🌾 Farm Sevak Agriculture Predictor", TARGET_LANG))
+st.markdown(f'<div class="subtitle">{translate_text("An interactive web app built with Machine Learning to predict crop yield, fertilizer, and pesticide requirements based on farm and soil parameters.", TARGET_LANG)}</div>', unsafe_allow_html=True)
 
 state_options = ["Andhra Pradesh","Bihar","Gujarat","Karnataka","Maharashtra","Punjab","Rajasthan","Tamil Nadu","Uttar Pradesh","West Bengal","Other"]
 crop_options = ["Rice","Wheat","Maize","Cotton","Sugarcane","Soybean","Pulses","Other"]
